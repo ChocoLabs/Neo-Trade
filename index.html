@@ -1,157 +1,158 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="NeoTrade – Asesor financiero con IA" />
-    <title>NeoTrade – IA Financiera</title>
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeoTrade Chat IA</title>
+  <link rel="stylesheet" href="style.css"> <!-- Coloca aquí el CSS que te pasé antes -->
+</head>
+<body>
+  <h1>NeoTrade Chat IA</h1>
 
-      html {
-        font-family: "Inter", sans-serif;
-        scroll-behavior: smooth;
-      }
-      .chat-bubble {
-        max-width: 80%;
-        padding: 0.75rem 1rem;
-        border-radius: 1rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        word-wrap: break-word;
-      }
-      .chat-bubble.user {
-        margin-left: auto;
-        background-color: #4f46e5;
-        color: #fff;
-        border-bottom-right-radius: 0.25rem;
-      }
-      .chat-bubble.assistant {
-        margin-right: auto;
-        background-color: #f3f4f6;
-        color: #111827;
-        border-bottom-left-radius: 0.25rem;
-      }
-      .messages {
-        scrollbar-width: thin;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
-    <header class="bg-white shadow-md sticky top-0 z-20 p-4 flex items-center justify-between">
-      <h1 class="text-2xl font-bold">📊 NeoTrade</h1>
-      <button id="theme-toggle" class="text-gray-600 hover:text-indigo-600">🌙</button>
-    </header>
+  <div id="chat">
+    <div class="msg bot">
+      <div class="avatar">🤖</div>
+      <div><strong>Hola, soy NeoTrade IA.</strong><br>¿Qué análisis necesitas hoy?</div>
+    </div>
+  </div>
 
-    <main class="flex-1 grid grid-cols-1 md:grid-cols-[3fr_1fr]">
-      <!-- Chat Principal -->
-      <section class="flex flex-col border-r border-gray-200">
-        <div id="messages" class="messages flex-1 overflow-y-auto p-4 space-y-4 bg-white"></div>
-        <form id="chat-form" class="p-4 bg-gray-50 border-t flex gap-2">
-          <textarea
-            id="user-input"
-            class="flex-1 p-3 rounded-md border resize-none focus:outline-none focus:ring focus:border-indigo-500"
-            rows="2"
-            placeholder="Escribe tu mensaje..."
-            required
-          ></textarea>
-          <button
-            type="submit"
-            class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition"
-          >
-            Enviar
-          </button>
-        </form>
-      </section>
+  <div id="inputArea">
+    <input id="userInput" placeholder="Escribe tu mensaje..." />
+    <button onclick="enviar()">Enviar</button>
+    <button onclick="reiniciar()" style="margin-left:10px;background:#dc3545">Reiniciar</button>
+  </div>
 
-      <!-- Panel lateral -->
-      <aside class="hidden md:flex flex-col gap-4 p-4 bg-gray-50">
-        <h2 class="text-xl font-semibold">Asistente IA</h2>
-        <select id="script-select" class="p-2 border rounded-md">
-          <option value="">Selecciona un guion…</option>
-          <option value="bienvenida">Saludo de bienvenida</option>
-          <option value="analisis-accion">Análisis de una acción</option>
-          <option value="riesgo-cartera">Evaluar riesgo de cartera</option>
-        </select>
-        <button
-          id="run-script"
-          class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-        >
-          Ejecutar guion
-        </button>
-        <p class="text-sm text-gray-500">
-          Selecciona un guion predefinido para rellenar el mensaje automáticamente.
-        </p>
-      </aside>
-    </main>
+  <p class="status" id="status">Esperando entrada...</p>
 
-    <footer class="bg-white text-center p-4 text-sm text-gray-500 border-t">
-      NeoTrade no sustituye asesoramiento profesional. <a href="#" class="underline">Términos</a>.
-    </footer>
+  <script>
+    const apiKey = "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";
+    const assistantId = "asst_mKeLzUY6kKN819oalJQ0n23O";
+    let threadId = null;
 
-    <script>
-      const form = document.getElementById("chat-form");
-      const input = document.getElementById("user-input");
-      const messages = document.getElementById("messages");
-      const scriptSelect = document.getElementById("script-select");
-      const runScriptBtn = document.getElementById("run-script");
-      const themeToggle = document.getElementById("theme-toggle");
+    function formatearTexto(texto) {
+      return texto
+        .replace(/\n/g, "<br>")
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+        .replace(/`(.*?)`/g, "<code>$1</code>")
+        .replace(/^- (.*$)/gm, "<li>$1</li>")
+        .replace(/<li>(.*?)<\/li>/g, "<ul><li>$1</li></ul>");
+    }
 
-      const assistantId = "asst_mKeLzUY6kKN819oalJQ0n23O";
-      const apiUrl = "https://tu-backend.aqui/api/chat"; // ← CAMBIA esto a tu URL real
+    async function enviar() {
+      const input = document.getElementById("userInput");
+      const chat = document.getElementById("chat");
+      const status = document.getElementById("status");
+      const mensaje = input.value.trim();
+      if (!mensaje) return;
 
-      const scripts = {
-        bienvenida:
-          "¡Hola! Soy NeoTrade, tu asesor financiero. ¿En qué puedo ayudarte hoy?",
-        "analisis-accion":
-          "Indícame la acción que deseas analizar y te proporcionaré un análisis detallado.",
-        "riesgo-cartera":
-          "Dime cómo está distribuida tu cartera actual y evaluaremos su nivel de riesgo.",
-      };
+      input.value = "";
 
-      runScriptBtn.onclick = () => {
-        const key = scriptSelect.value;
-        if (scripts[key]) input.value = scripts[key];
-      };
+      // Mostrar mensaje del usuario
+      const userMsg = document.createElement("div");
+      userMsg.className = "msg user fade-in";
+      userMsg.innerHTML = `<div class='avatar'>🧑</div><div>${mensaje}</div>`;
+      chat.appendChild(userMsg);
+      chat.scrollTop = chat.scrollHeight;
 
-      const createBubble = (text, sender) => {
-        const bubble = document.createElement("div");
-        bubble.className = `chat-bubble ${sender}`;
-        bubble.textContent = text;
-        return bubble;
-      };
+      // Crear indicador de escritura
+      const typing = document.createElement("div");
+      typing.className = "msg bot typing";
+      typing.innerHTML = `<div class='avatar'>🤖</div><div class='typing'>NeoTrade IA está escribiendo</div>`;
+      chat.appendChild(typing);
+      chat.scrollTop = chat.scrollHeight;
 
-      form.onsubmit = async (e) => {
-        e.preventDefault();
-        const text = input.value.trim();
-        if (!text) return;
+      status.innerText = "Enviando mensaje...";
 
-        messages.appendChild(createBubble(text, "user"));
-        input.value = "";
-        messages.scrollTop = messages.scrollHeight;
-
-        const loading = createBubble("Escribiendo...", "assistant");
-        messages.appendChild(loading);
-        messages.scrollTop = messages.scrollHeight;
-
-        try {
-          const res = await fetch(apiUrl, {
+      try {
+        if (!threadId) {
+          const threadRes = await fetch("https://api.openai.com/v1/threads", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text, assistant_id: assistantId }),
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              "OpenAI-Beta": "assistants=v2"
+            }
           });
-          const data = await res.json();
-          loading.remove();
-          messages.appendChild(createBubble(data.reply, "assistant"));
-        } catch (err) {
-          loading.textContent = "Error de conexión con el servidor.";
+          const threadData = await threadRes.json();
+          if (threadData.error) throw new Error(threadData.error.message);
+          threadId = threadData.id;
         }
-      };
 
-      themeToggle.onclick = () => {
-        document.documentElement.classList.toggle("dark");
-      };
-    </script>
-  </body>
+        await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2"
+          },
+          body: JSON.stringify({ role: "user", content: mensaje })
+        });
+
+        const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "OpenAI-Beta": "assistants=v2"
+          },
+          body: JSON.stringify({ assistant_id: assistantId })
+        });
+        const runData = await runRes.json();
+        if (runData.error) throw new Error(runData.error.message);
+
+        let estado = "queued";
+        while (estado !== "completed" && estado !== "failed") {
+          await new Promise(r => setTimeout(r, 1500));
+          const statusRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runData.id}`, {
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "OpenAI-Beta": "assistants=v2"
+            }
+          });
+          const statusData = await statusRes.json();
+          if (statusData.error) throw new Error(statusData.error.message);
+          estado = statusData.status;
+          status.innerText = `Estado: ${estado}`;
+        }
+
+        const msgList = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "OpenAI-Beta": "assistants=v2"
+          }
+        });
+        const msgListData = await msgList.json();
+        const respuesta = msgListData.data.find(m => m.role === "assistant")?.content[0]?.text?.value || "❌ Sin respuesta.";
+
+        typing.remove();
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "msg bot fade-in";
+        botMsg.innerHTML = `<div class='avatar'>🤖</div><div>${formatearTexto(respuesta)}</div>`;
+        chat.appendChild(botMsg);
+        chat.scrollTop = chat.scrollHeight;
+        status.innerText = "✅ Respuesta completada.";
+      } catch (err) {
+        typing.remove();
+        const errorMsg = document.createElement("div");
+        errorMsg.className = "msg bot";
+        errorMsg.innerHTML = `<div class='avatar'>🤖</div><div>❌ Error: ${err.message}</div>`;
+        chat.appendChild(errorMsg);
+        status.innerText = `❌ Error: ${err.message}`;
+      }
+    }
+
+    function reiniciar() {
+      threadId = null;
+      document.getElementById("chat").innerHTML = `
+        <div class="msg bot fade-in">
+          <div class="avatar">🤖</div>
+          <div><strong>Hola, soy NeoTrade IA.</strong><br>¿Qué análisis necesitas hoy?</div>
+        </div>`;
+      document.getElementById("status").innerText = "Chat reiniciado.";
+    }
+  </script>
+</body>
 </html>
