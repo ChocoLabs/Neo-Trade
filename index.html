@@ -24,8 +24,15 @@
 
   <p class="status" id="status">Esperando entrada...</p>
 
+  <!-- Librería para desencriptar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
   <script>
-    const apiKey = "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";
+    const encryptedKey = "U2FsdGVkX18K2qqCe9jkCvOCaNN9YV+GcFrsESQhF07RUbP18fV1POaWxq7n0WhW7MNqvNMrhslDF2x94cU10OCnQQKhWkFBn9owZbXnnkLbR8vPvRDZSw3bco2Wx6z1f+L9kJ+/0T9AxTjLbHUO6XmgJwJfhX6ZABgrhUln8rk=";
+    const secret = "Clave Deusto";
+
+    const apiKey = CryptoJS.AES.decrypt(encryptedKey, secret).toString(CryptoJS.enc.Utf8);
+
     const assistantId = "asst_mKeLzUY6kKN819oalJQ0n23O";
     let threadId = null;
 
