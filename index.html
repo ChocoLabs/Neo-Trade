@@ -18,20 +18,27 @@
 
   <div id="inputArea">
     <input id="userInput" placeholder="Escribe tu mensaje..." />
-    <button onclick="enviar()">Enviar</button>
+    <button onclick="cargarApiKeyYEmpezar(enviar)">Enviar</button>
     <button onclick="reiniciar()" style="margin-left:10px;background:#dc3545">Reiniciar</button>
   </div>
 
   <p class="status" id="status">Esperando entrada...</p>
 
-  <!-- Librería para desencriptar -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
   <script>
-    const encryptedKey = "U2FsdGVkX18K2qqCe9jkCvOCaNN9YV+GcFrsESQhF07RUbP18fV1POaWxq7n0WhW7MNqvNMrhslDF2x94cU10OCnQQKhWkFBn9owZbXnnkLbR8vPvRDZSw3bco2Wx6z1f+L9kJ+/0T9AxTjLbHUO6XmgJwJfhX6ZABgrhUln8rk=";
-    const secret = "Clave Deusto";
+    let apiKey = "";
 
-    const apiKey = CryptoJS.AES.decrypt(encryptedKey, secret).toString(CryptoJS.enc.Utf8);
+    async function cargarApiKeyYEmpezar(callback) {
+      try {
+        const res = await fetch("https://gist.githubusercontent.com/ChocoLabs/e881f5d4aae1ec61f5d97a86aa1b0b1c/raw/a0744529faa6d0d3003ca9ae7899b2cb2382b961/gistfile1.txt");
+        const key = await res.text();
+        apiKey = key.trim();
+        console.log("✅ API Key cargada");
+        callback(); // Lanza la función principal cuando esté lista
+      } catch (e) {
+        alert("❌ Error al cargar la clave desde el Gist");
+        console.error(e);
+      }
+    }
 
     const assistantId = "asst_mKeLzUY6kKN819oalJQ0n23O";
     let threadId = null;
